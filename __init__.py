@@ -58,6 +58,7 @@ def search(query, max_results=10, timeout=60):
             s.downloads[download.format] = download.url
 
         s.formats = ', '.join(s.downloads.keys())
+        s.drm = SearchResult.DRM_UNLOCKED
 
         # don't show results with no downloads
         if not s.formats:
