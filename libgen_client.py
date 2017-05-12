@@ -11,7 +11,6 @@ ID_REGEX = "\?id=[0-9]+"
 from lxml import etree
 import re
 import urllib
-import urllib2
 
 DEFAULT_FIELDS = "Title,Author,ID,MD5"
 
@@ -82,6 +81,9 @@ class LibgenBook:
         downloads_nodes = xpath(node, DOWNLOADS_XPATH)
         downloads = [LibgenDownload.parse(n) for n in downloads_nodes]
 
+        if not author or not title:
+            return None
+
         return LibgenBook(title, author, series, downloads, language)
 
 class LibgenSearchResults:
@@ -91,11 +93,17 @@ class LibgenSearchResults:
 
     @staticmethod
     def parse(node):
-        SEARCH_ROW_SELECTOR = "//table[2]//tr"
+        SEARCH_ROW_SELECTOR = "//table[3]//tr"
 
         result_rows = xpath(node, SEARCH_ROW_SELECTOR)
 
-        results = [LibgenBook.parse(row) for row in result_rows]
+        results = []
+        for row in result_rows:
+            book = LibgenBook.parse(row)
+            if book is None: continue
+
+            results.append(book)
+
         total = 0
 
         return LibgenSearchResults(results, total)
@@ -109,18 +117,21 @@ class LibgenFictionClient:
         query_params = {
             's': query,
             'f_group': 1
-        }
+        } 
 
         query_string = urllib.urlencode(query_params)
-        request = urllib2.request(url + '?' + query_string)
+        request = urllib.urlopen(url + '?' + query_string)
         html = request.read()
 
         parser = etree.HTMLParser()
-        tree = etree.fromstring(params, parser)
+        tree = etree.fromstring(html, parser)
 
         return LibgenSearchResults.parse(tree)
 
 
 if __name__ == "__main__":
     client = LibgenFictionClient()
-    result = client.search("Stormlight Archive")
+    result = client.search("way kings")
+
+    for result in result.results:
+        print(result.title)
