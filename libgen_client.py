@@ -8,12 +8,20 @@ SEARCH_URL = "index.php"
 
 ID_REGEX = "\?id=[0-9]+"
 
-import requests
-import json
-from collections import namedtuple
 from lxml import etree
-
 import re
+import urllib
+import urllib2
+
+DEFAULT_FIELDS = "Title,Author,ID,MD5"
+
+LIBGEN_URL = "http://libgen.io/foreignfiction/"
+
+BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
+DOWNLOAD_URL = "get.php?md5={0}"
+SEARCH_URL = "index.php"
+
+ID_REGEX = "\?id=[0-9]+"
 
 
 def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
@@ -103,14 +111,16 @@ class LibgenFictionClient:
             'f_group': 1
         }
 
-        response = requests.get(url, params=query_params)
+        query_string = urllib.urlencode(query_params)
+        request = urllib2.request(url + '?' + query_string)
+        html = request.read()
 
         parser = etree.HTMLParser()
-        tree = etree.fromstring(response.text, parser)
+        tree = etree.fromstring(params, parser)
 
         return LibgenSearchResults.parse(tree)
 
 
 if __name__ == "__main__":
-    client = LibgenClient()
+    client = LibgenFictionClient()
     result = client.search("Stormlight Archive")
