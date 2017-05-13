@@ -50,7 +50,7 @@ class LibgenDownload:
         if not match:
             return None
 
-        url = 'http://libgen.io/' + node.get('href').replace('ads.php', 'get.php')
+        url = BASE_URL + node.get('href').replace('ads.php', 'get.php')
 
         format = match.group(1)
         size = match.group(2)
