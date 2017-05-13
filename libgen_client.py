@@ -73,7 +73,8 @@ class LibgenBook:
         LANGUAGE_XPATH = '/td[4]'
         DOWNLOADS_XPATH = '/td[5]/div/a[1]'
 
-        author = xpath(node, AUTHOR_XPATH)[0].text
+        author_result = xpath(node, AUTHOR_XPATH)
+        author = author_result[0].text if len(author_result) > 0 else 'Unknown'
         series = xpath(node, SERIES_XPATH)[0].text
         title = xpath(node, TITLE_XPATH)[0].text
         language = xpath(node, LANGUAGE_XPATH)[0].text
