@@ -94,7 +94,7 @@ class LibgenSearchResults:
 
     @staticmethod
     def parse(node):
-        SEARCH_ROW_SELECTOR = "//table[3]//tr"
+        SEARCH_ROW_SELECTOR = "//body/table[last()]//tr"
 
         result_rows = xpath(node, SEARCH_ROW_SELECTOR)
 
