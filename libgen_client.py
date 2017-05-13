@@ -1,5 +1,6 @@
 DEFAULT_FIELDS = "Title,Author,ID,MD5"
 
+BASE_URL = "http://libgen.io/"
 LIBGEN_URL = "http://libgen.io/foreignfiction/"
 
 BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
@@ -58,12 +59,13 @@ class LibgenDownload:
         return LibgenDownload(url, format, size, unit)
 
 class LibgenBook:
-    def __init__(self, title, author, series, downloads, language):
+    def __init__(self, title, author, series, downloads, language, image_url):
         self.title = title
         self.author = author
         self.series = series
         self.downloads = downloads
         self.language = language
+        self.image_url = image_url
 
     @staticmethod
     def parse(node):
@@ -72,6 +74,7 @@ class LibgenBook:
         TITLE_XPATH = '/td[3]'
         LANGUAGE_XPATH = '/td[4]'
         DOWNLOADS_XPATH = '/td[5]/div/a[1]'
+        IMAGE_REGEX = re.compile("\&lt\;img src=\"?/(fictioncovers/.*?)\"? .*?\&gt\;")
 
         author_result = xpath(node, AUTHOR_XPATH)
         author = author_result[0].text if len(author_result) > 0 else 'Unknown'
@@ -85,7 +88,11 @@ class LibgenBook:
         if not author or not title:
             return None
 
-        return LibgenBook(title, author, series, downloads, language)
+        raw_html = etree.tostring(node)
+        image_match = IMAGE_REGEX.search(raw_html)
+        image_url = BASE_URL + image_match.groups(1)[0] if image_match is not None else None          
+
+        return LibgenBook(title, author, series, downloads, language, image_url)
 
 class LibgenSearchResults:
     def __init__(self, results, total):
