@@ -4,7 +4,7 @@ from __future__ import (unicode_literals, division, absolute_import, print_funct
 store_version = 5  # Needed for dynamic plugin loading
 
 __license__ = 'MIT'
-__copyright__ = 'Jay Harris <jay.harris@outlook.co.nz>'
+__copyright__ = 'Fallacious Reasoning'
 __docformat__ = 'restructuredtext en'
 
 #####################################################################
@@ -15,9 +15,9 @@ from calibre.customize import InterfaceActionBase
 
 PLUGIN_NAME = 'Libgen Fiction'
 PLUGIN_DESCRIPTION = 'Adds a Libfen Fiction search provider to Calibre'
-PLUGIN_VERSION_TUPLE = (0, 0, 0)
+PLUGIN_VERSION_TUPLE = (0, 1, 0)
 PLUGIN_VERSION = '.'.join([str(x) for x in PLUGIN_VERSION_TUPLE])
-PLUGIN_AUTHORS = "Jay Harris <jay.harris@outlook.co.nz"
+PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
 
 #####################################################################
 
@@ -90,7 +90,6 @@ class LibgenStoreWrapper(StoreBase):
     author                  = PLUGIN_AUTHORS
     version                 = PLUGIN_VERSION_TUPLE
     minimum_calibre_version = (1, 0, 0)
-    #actual_plugin = "calibre_plugins.liben_fiction.LibgenStore"
     affiliate               = False
 
     def load_actual_plugin(self, gui):
