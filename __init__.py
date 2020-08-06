@@ -14,7 +14,7 @@ __docformat__ = 'restructuredtext en'
 from calibre.customize import InterfaceActionBase
 
 PLUGIN_NAME = 'Libgen Fiction'
-PLUGIN_DESCRIPTION = 'Adds a Libfen Fiction search provider to Calibre'
+PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to Calibre'
 PLUGIN_VERSION_TUPLE = (0, 1, 0)
 PLUGIN_VERSION = '.'.join([str(x) for x in PLUGIN_VERSION_TUPLE])
 PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
@@ -67,7 +67,7 @@ def search(query, max_results=10, timeout=60):
 
         yield s
 
-        
+
 class LibgenStore(StorePlugin):
     def search(self, query, max_results=10, timeout=60):
         '''
