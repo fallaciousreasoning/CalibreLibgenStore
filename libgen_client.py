@@ -1,21 +1,15 @@
-DEFAULT_FIELDS = "Title,Author,ID,MD5"
-
-BASE_URL = "http://libgen.io/"
-LIBGEN_URL = "http://libgen.io/foreignfiction/"
-
-BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
-DOWNLOAD_URL = "get.php?md5={0}"
-SEARCH_URL = "index.php"
-
-ID_REGEX = "\?id=[0-9]+"
-
 from lxml import etree
 import re
 import urllib
 
-DEFAULT_FIELDS = "Title,Author,ID,MD5"
+MIRRORS = [
+    "libgen.is",
+    "gen.lib.rus.ec",
+    "93.174.95.27",
+]
 
-LIBGEN_URL = "http://libgen.io/foreignfiction/"
+BASE_URL = "http://{0}/".format(MIRRORS[0])
+LIBGEN_URL = "{0}foreignfiction/".format(BASE_URL)
 
 BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
 DOWNLOAD_URL = "get.php?md5={0}"
@@ -23,6 +17,7 @@ SEARCH_URL = "index.php"
 
 ID_REGEX = "\?id=[0-9]+"
 
+DEFAULT_FIELDS = "Title,Author,ID,MD5"
 
 def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
 def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
@@ -90,7 +85,7 @@ class LibgenBook:
 
         raw_html = etree.tostring(node)
         image_match = IMAGE_REGEX.search(raw_html)
-        image_url = BASE_URL + image_match.groups(1)[0] if image_match is not None else None          
+        image_url = BASE_URL + image_match.groups(1)[0] if image_match is not None else None
 
         return LibgenBook(title, author, series, downloads, language, image_url)
 
@@ -125,7 +120,7 @@ class LibgenFictionClient:
         query_params = {
             's': query,
             'f_group': 1
-        } 
+        }
 
         query_string = urllib.urlencode(query_params)
         request = urllib.urlopen(url + '?' + query_string)
