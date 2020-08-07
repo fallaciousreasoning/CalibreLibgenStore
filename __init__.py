@@ -41,7 +41,6 @@ from calibre.gui2.store import StorePlugin
 from calibre.customize import StoreBase
 
 
-web_url = 'http://libgen.io/'
 libgen = LibgenFictionClient()
 
 def search(query, max_results=10, timeout=60):
