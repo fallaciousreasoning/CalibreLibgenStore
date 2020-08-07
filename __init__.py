@@ -44,8 +44,12 @@ from calibre.customize import StoreBase
 libgen = LibgenFictionClient()
 
 def search(query, max_results=10, timeout=60):
+    print('CalibreLibgenStore:search:query = {}'.format(query))
+
     libgen_results = libgen.search(query)
     for result in libgen_results.results[:min(max_results, len(libgen_results.results))]:
+        print('CalibreLibgenStore:search:result.title = {}'.format(result.title))
+
         s = SearchResult()
 
         s.title = result.title
@@ -54,6 +58,9 @@ def search(query, max_results=10, timeout=60):
         s.language = result.language
 
         for download in result.downloads:
+            print('CalibreLibgenStore:search:result.download.url = {}'.format(
+                download.url))
+
             s.downloads[download.format] = download.url
 
         s.formats = ', '.join(s.downloads.keys())
