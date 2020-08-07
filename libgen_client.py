@@ -9,7 +9,7 @@ MIRRORS = [
 ]
 
 BASE_URL = "http://{0}/".format(MIRRORS[0])
-LIBGEN_URL = "{0}foreignfiction/".format(BASE_URL)
+LIBGEN_URL = "{0}fiction/".format(BASE_URL)
 
 BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
 DOWNLOAD_URL = "get.php?md5={0}"
@@ -37,21 +37,9 @@ class LibgenDownload:
 
     @staticmethod
     def parse(node):
-        DOWNLOAD_REGEX = "([A-z0-9]+)\(([0-9]+)([A-z]+)\)"
+        url = node.get('href').replace('ads.php', 'get.php')
 
-        text = node.text
-        match = re.match(DOWNLOAD_REGEX, text)
-
-        if not match:
-            return None
-
-        url = BASE_URL + node.get('href').replace('ads.php', 'get.php')
-
-        format = match.group(1)
-        size = match.group(2)
-        unit = match.group(3)
-
-        return LibgenDownload(url, format, size, unit)
+        return LibgenDownload(url, None, None, None)
 
 class LibgenBook:
     def __init__(self, title, author, series, downloads, language, image_url):
@@ -64,15 +52,17 @@ class LibgenBook:
 
     @staticmethod
     def parse(node):
-        AUTHOR_XPATH = '/td[1]/a'
+        AUTHOR_XPATH = '/td[1]//a'
         SERIES_XPATH = '/td[2]'
-        TITLE_XPATH = '/td[3]'
+        TITLE_XPATH = '/td[3]/a'
         LANGUAGE_XPATH = '/td[4]'
-        DOWNLOADS_XPATH = '/td[5]/div/a[1]'
-        IMAGE_REGEX = re.compile("\&lt\;img src=\"?/(fictioncovers/.*?)\"? .*?\&gt\;")
+        # FILE_XPATH = '/td[5]'
+        DOWNLOADS_XPATH = '/td[6]//a'
 
         author_result = xpath(node, AUTHOR_XPATH)
-        author = author_result[0].text if len(author_result) > 0 else 'Unknown'
+        author = ' & '.join([result.text for result in author_result])\
+            if len(author_result) > 0\
+            else 'Unknown'
         series = xpath(node, SERIES_XPATH)[0].text
         title = xpath(node, TITLE_XPATH)[0].text
         language = xpath(node, LANGUAGE_XPATH)[0].text
@@ -80,14 +70,10 @@ class LibgenBook:
         downloads_nodes = xpath(node, DOWNLOADS_XPATH)
         downloads = [LibgenDownload.parse(n) for n in downloads_nodes]
 
-        if not author or not title:
+        if not author and not title:
             return None
 
-        raw_html = etree.tostring(node)
-        image_match = IMAGE_REGEX.search(raw_html)
-        image_url = BASE_URL + image_match.groups(1)[0] if image_match is not None else None
-
-        return LibgenBook(title, author, series, downloads, language, image_url)
+        return LibgenBook(title, author, series, downloads, language, None)
 
 class LibgenSearchResults:
     def __init__(self, results, total):
@@ -96,18 +82,20 @@ class LibgenSearchResults:
 
     @staticmethod
     def parse(node):
-        SEARCH_ROW_SELECTOR = "//body/table[last()]//tr"
+        SEARCH_ROW_SELECTOR = "/body/table/tbody/tr"
 
         result_rows = xpath(node, SEARCH_ROW_SELECTOR)
 
         results = []
+
         for row in result_rows:
             book = LibgenBook.parse(row)
-            if book is None: continue
+            if book is None:
+                continue
 
             results.append(book)
 
-        total = 0
+        total = len(results)
 
         return LibgenSearchResults(results, total)
 
