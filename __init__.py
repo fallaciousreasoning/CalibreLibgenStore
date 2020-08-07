@@ -11,7 +11,7 @@ __docformat__ = 'restructuredtext en'
 # Plug-in base class
 #####################################################################
 
-from calibre.customize import InterfaceActionBase
+# from calibre.customize import InterfaceActionBase
 
 PLUGIN_NAME = 'Libgen Fiction'
 PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to Calibre'
@@ -21,20 +21,20 @@ PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/C
 
 #####################################################################
 
-import base64
-import mimetypes
-import re
-import urllib
-import urllib2
-from contextlib import closing
+# import base64
+# import mimetypes
+# import re
+# import urllib
+# import urllib2
+# from contextlib import closing
 
-from lxml import etree
+# from lxml import etree
 
 from .libgen_client import LibgenFictionClient
 
-from calibre import browser, url_slash_cleaner
-from calibre.constants import __appname__, __version__
-from calibre.gui2.store.basic_config import BasicStoreConfig
+# from calibre import browser, url_slash_cleaner
+# from calibre.constants import __appname__, __version__
+# from calibre.gui2.store.basic_config import BasicStoreConfig
 from calibre.gui2.store.search_result import SearchResult
 from calibre.gui2.store import StorePlugin
 
