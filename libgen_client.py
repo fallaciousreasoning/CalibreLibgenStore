@@ -13,7 +13,7 @@ LIBGEN_URL = "{0}foreignfiction/".format(BASE_URL)
 
 BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
 DOWNLOAD_URL = "get.php?md5={0}"
-SEARCH_URL = "index.php"
+SEARCH_URL = ""
 
 ID_REGEX = "\?id=[0-9]+"
 
@@ -118,8 +118,10 @@ class LibgenFictionClient:
     def search(self, query):
         url = self.base_url + SEARCH_URL
         query_params = {
-            's': query,
-            'f_group': 1
+            'q': query,
+            'criteria': '',
+            'language': '',
+            'format': 'epub',
         }
 
         query_string = urllib.urlencode(query_params)
@@ -134,7 +136,7 @@ class LibgenFictionClient:
 
 if __name__ == "__main__":
     client = LibgenFictionClient()
-    result = client.search("way kings")
+    search_results = client.search("shadows on the grass")
 
-    for result in result.results:
+    for result in search_results.results:
         print(result.title)
