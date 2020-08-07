@@ -39,7 +39,7 @@ class LibgenDownload:
     def parse(node):
         url = node.get('href').replace('ads.php', 'get.php')
 
-        return LibgenDownload(url, None, None, None)
+        return LibgenDownload(url, 'EPUB', 'Unknown', '')
 
 class LibgenBook:
     def __init__(self, title, author, series, downloads, language, image_url):
@@ -73,7 +73,7 @@ class LibgenBook:
         if not author and not title:
             return None
 
-        return LibgenBook(title, author, series, downloads, language, None)
+        return LibgenBook(title, author, series, downloads[0], language, None)
 
 class LibgenSearchResults:
     def __init__(self, results, total):
