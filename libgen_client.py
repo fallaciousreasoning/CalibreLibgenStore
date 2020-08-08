@@ -1,26 +1,8 @@
 from lxml import etree
-import re
+import random
 import urllib
 
-MIRRORS = [
-    "libgen.is",
-    "gen.lib.rus.ec",
-    "93.174.95.27",
-]
 
-BASE_URL = "http://{0}/".format(MIRRORS[0])
-LIBGEN_URL = "{0}fiction/".format(BASE_URL)
-
-BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
-DOWNLOAD_URL = "get.php?md5={0}"
-SEARCH_URL = ""
-
-ID_REGEX = "\?id=[0-9]+"
-
-DEFAULT_FIELDS = "Title,Author,ID,MD5"
-
-def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
-def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -28,7 +10,7 @@ def xpath(node, path):
 
     return tree.xpath(base_xpath + path)
 
-class LibgenDownload:
+class LibgenMirror:
     def __init__(self, url, format, size, unit):
         self.url = url
         self.format = format
@@ -39,14 +21,16 @@ class LibgenDownload:
     def parse(node, file_type, file_size, file_size_unit):
         url = node.get('href')
 
-        return LibgenDownload(url, file_type, file_size, file_size_unit)
+        return LibgenMirror(url, file_type, file_size, file_size_unit)
 
 class LibgenBook:
-    def __init__(self, title, author, series, downloads, language, image_url):
+    def __init__(self, title, authors, series, md5, mirrors, language,
+                 image_url):
         self.title = title
-        self.author = author
+        self.authors = authors
         self.series = series
-        self.downloads = downloads
+        self.md5 = md5
+        self.mirrors = mirrors
         self.language = language
         self.image_url = image_url
 
@@ -57,28 +41,37 @@ class LibgenBook:
         TITLE_XPATH = '/td[3]/a'
         LANGUAGE_XPATH = '/td[4]'
         FILE_XPATH = '/td[5]'
-        DOWNLOADS_XPATH = '/td[6]//a'
+        MIRRORS_XPATH = '/td[6]//a'
 
-        author_result = xpath(node, AUTHOR_XPATH)
-        author = ' & '.join([result.text for result in author_result])\
-            if len(author_result) > 0\
-            else 'Unknown'
-        series = xpath(node, SERIES_XPATH)[0].text
-        title = xpath(node, TITLE_XPATH)[0].text
-        language = xpath(node, LANGUAGE_XPATH)[0].text
+        # Parse the Author(s) column into `authors`
+        authors = ' & '.join([
+            author.text for author in xpath(node, AUTHOR_XPATH)
+        ])
+
+        if len(authors) == 0:
+            authors = 'Unknown'
+
+        # Parse File and Mirrors columns into a list of mirrors
         file_info = xpath(node, FILE_XPATH)[0].text.encode('utf-8')
         file_type, file_size = file_info.split(' / ')
         file_size, file_size_unit = file_size.split('\xc2\xa0')
 
-        downloads_nodes = xpath(node, DOWNLOADS_XPATH)
-        downloads = [
-            LibgenDownload.parse(n, file_type, file_size, file_size_unit)
-            for n in downloads_nodes]
+        mirrors = [
+            LibgenMirror.parse(n, file_type, file_size, file_size_unit)
+            for n in xpath(node, MIRRORS_XPATH)
+        ]
 
-        if not author and not title:
+        # Parse other columns
+        series = xpath(node, SERIES_XPATH)[0].text
+        title = xpath(node, TITLE_XPATH)[0].text
+        md5 = xpath(node, TITLE_XPATH)[0].get('href').split('/')[-1]
+        language = xpath(node, LANGUAGE_XPATH)[0].text
+
+        if not authors or not title:
             return None
 
-        return LibgenBook(title, author, series, downloads, language, None)
+        return LibgenBook(title, authors, series, md5, mirrors, language, None)
+
 
 class LibgenSearchResults:
     def __init__(self, results, total):
@@ -104,12 +97,24 @@ class LibgenSearchResults:
 
         return LibgenSearchResults(results, total)
 
+
 class LibgenFictionClient:
-    def __init__(self, base_url=LIBGEN_URL):
-        self.base_url = base_url
+    def __init__(self, mirror=None):
+
+        MIRRORS = [
+            "libgen.is",
+            # "libgen.lc",  # Still has the old-style search
+            "gen.lib.rus.ec",
+            "93.174.95.27",
+        ]
+
+        if mirror is None:
+            self.base_url = "http://{}/fiction/".format(random.choice(MIRRORS))
+        else:
+            self.base_url = "http://{}/fiction/".format(mirror)
 
     def search(self, query):
-        url = self.base_url + SEARCH_URL
+        url = self.base_url
         query_params = {
             'q': query,
             'criteria': '',
@@ -125,6 +130,11 @@ class LibgenFictionClient:
         tree = etree.fromstring(html, parser)
 
         return LibgenSearchResults.parse(tree)
+
+    def get_detail_url(self, md5):
+        detail_url = '{}{}'.format(self.base_url, md5)
+
+        return detail_url
 
 
 if __name__ == "__main__":
