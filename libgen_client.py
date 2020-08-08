@@ -3,12 +3,12 @@ import random
 import urllib
 
 
+
 def xpath(node, path):
     tree = node.getroottree()
     base_xpath = tree.getpath(node)
 
     return tree.xpath(base_xpath + path)
-
 
 class LibgenMirror:
     def __init__(self, url, format, size, unit):
@@ -22,7 +22,6 @@ class LibgenMirror:
         url = node.get('href')
 
         return LibgenMirror(url, file_type, file_size, file_size_unit)
-
 
 class LibgenBook:
     def __init__(self, title, authors, series, md5, mirrors, language,
@@ -102,25 +101,17 @@ class LibgenSearchResults:
 class LibgenFictionClient:
     def __init__(self, mirror=None):
 
+        MIRRORS = [
+            "libgen.is",
+            # "libgen.lc",  # Still has the old-style search
+            "gen.lib.rus.ec",
+            "93.174.95.27",
+        ]
+
         if mirror is None:
-            mirrors = self.get_mirrors_from_txt('MIRRORS.txt')
-            self.base_url = "http://{}/fiction/".format(random.choice(mirrors))
+            self.base_url = "http://{}/fiction/".format(random.choice(MIRRORS))
         else:
             self.base_url = "http://{}/fiction/".format(mirror)
-
-    def get_mirrors_from_txt(self, txt):
-        mirrors = []
-
-        with open(txt, mode='r') as mirrors_txt:
-            for line in mirrors_txt.readlines():
-                line = line.strip()
-
-                if len(line) == 0 or line[0] == '#':
-                    continue
-
-                mirrors.append(line)
-
-        return mirrors
 
     def search(self, query):
         url = self.base_url

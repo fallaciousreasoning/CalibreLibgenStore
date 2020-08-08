@@ -1,6 +1,0 @@
-libgen.is
-gen.lib.rus.ec
-93.174.95.27
-
-# Do not use:
-# libgen.lc (has the old-style search)
