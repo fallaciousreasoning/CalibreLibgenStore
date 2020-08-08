@@ -12,3 +12,11 @@ While working on any of the scripts, run this to update the plugin in Calibre an
 ```shell
 calibre-customize -b . && calibre-debug -g
 ```
+
+## Build a release
+
+Run this to zip all PY files together:
+
+```shell
+./zip.sh
+```

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-zip CalibreLibgenStore.zip *.txt *.py
+zip CalibreLibgenStore.zip *.py
