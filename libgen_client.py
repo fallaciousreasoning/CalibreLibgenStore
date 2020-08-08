@@ -36,10 +36,10 @@ class LibgenDownload:
         self.unit = unit
 
     @staticmethod
-    def parse(node):
-        url = node.get('href').replace('ads.php', 'get.php')
+    def parse(node, file_type, file_size, file_size_unit):
+        url = node.get('href')
 
-        return LibgenDownload(url, 'EPUB', 'Unknown', 'Unknown')
+        return LibgenDownload(url, file_type, file_size, file_size_unit)
 
 class LibgenBook:
     def __init__(self, title, author, series, downloads, language, image_url):
@@ -56,7 +56,7 @@ class LibgenBook:
         SERIES_XPATH = '/td[2]'
         TITLE_XPATH = '/td[3]/a'
         LANGUAGE_XPATH = '/td[4]'
-        # FILE_XPATH = '/td[5]'
+        FILE_XPATH = '/td[5]'
         DOWNLOADS_XPATH = '/td[6]//a'
 
         author_result = xpath(node, AUTHOR_XPATH)
@@ -66,14 +66,19 @@ class LibgenBook:
         series = xpath(node, SERIES_XPATH)[0].text
         title = xpath(node, TITLE_XPATH)[0].text
         language = xpath(node, LANGUAGE_XPATH)[0].text
+        file_info = xpath(node, FILE_XPATH)[0].text.encode('utf-8')
+        file_type, file_size = file_info.split(' / ')
+        file_size, file_size_unit = file_size.split('\xc2\xa0')
 
         downloads_nodes = xpath(node, DOWNLOADS_XPATH)
-        downloads = [LibgenDownload.parse(n) for n in downloads_nodes]
+        downloads = [
+            LibgenDownload.parse(n, file_type, file_size, file_size_unit)
+            for n in downloads_nodes]
 
         if not author and not title:
             return None
 
-        return LibgenBook(title, author, series, downloads[0:1], language, None)
+        return LibgenBook(title, author, series, downloads, language, None)
 
 class LibgenSearchResults:
     def __init__(self, results, total):
@@ -109,7 +114,7 @@ class LibgenFictionClient:
             'q': query,
             'criteria': '',
             'language': '',
-            'format': 'epub',
+            'format': '',
         }
 
         query_string = urllib.urlencode(query_params)

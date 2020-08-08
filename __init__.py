@@ -61,7 +61,11 @@ def search(query, max_results=10, timeout=60):
             print('CalibreLibgenStore:search:result.download.url = {}'.format(
                 download.url))
 
-            s.downloads[download.format] = download.url
+            s.downloads['{} ({} {})'.format(
+                download.format,
+                download.size,
+                download.unit
+            )] = download.url
 
         s.formats = ', '.join(s.downloads.keys())
         s.drm = SearchResult.DRM_UNLOCKED
