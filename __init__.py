@@ -1,6 +1,7 @@
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 
 from calibre.customize import StoreBase
+from calibre.devices.usbms.driver import debug_print
 from calibre.gui2 import open_url
 from calibre.gui2.store import StorePlugin
 from calibre.gui2.store.search_result import SearchResult
@@ -25,8 +26,8 @@ class LibgenStore(StorePlugin):
         '''
         Initialize the Libgen Client
         '''
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:genesis')
 
-        print('LibgenStore:genesis: Initializing self.libgen')
         self.libgen = LibgenFictionClient()
 
     def search(self, query, max_results=10, timeout=60):
@@ -35,15 +36,19 @@ class LibgenStore(StorePlugin):
         downloads, it should not provide these as `s.downloads`.
         '''
 
-        print('LibgenStore:search: query = ', query)
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:search:query =',
+                    query)
 
         libgen_results = self.libgen.search(query)
 
         for result in libgen_results.results[:min(max_results, len(libgen_results.results))]:
-            print('LibgenStore:search: result.title = ', result.title)
+            debug_print('Libgen Fiction::__init__.py:LibgenStore:search:'
+                        'result.title =',
+                        result.title)
 
             for mirror in result.mirrors[0:1]:  # Calibre only shows 1 anyway
-                print('LibgenStore:search: result.mirror.url = ', mirror.url)
+                debug_print('Libgen Fiction::__init__.py:LibgenStore:search:'
+                            'result.mirror.url =', mirror.url)
 
                 s = SearchResult()
 
@@ -58,7 +63,8 @@ class LibgenStore(StorePlugin):
                 s.formats = mirror.format
                 s.plugin_author = PLUGIN_AUTHORS
 
-                print('LibgenStore:search: s = ', s, sep='\n')
+                debug_print('Libgen Fiction::__init__.py:LibgenStore:search:s =',
+                            s)
 
                 yield s
 
@@ -67,7 +73,8 @@ class LibgenStore(StorePlugin):
         Open the specified item in the external, or Calibre's browser
         '''
 
-        print('LibgenStore:open: locals() = ', locals())
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:open:locals() =',
+                    locals())
 
         detail_url = (
             self.libgen.get_detail_url(detail_item)
@@ -75,7 +82,8 @@ class LibgenStore(StorePlugin):
             else self.libgen.base_url
         )
 
-        print('LibgenStore:open: detail_url = ', detail_url)
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:open:detail_url =',
+                    detail_url)
 
         if external or self.config.get('open_external', False):
             open_url(QUrl(detail_url))
