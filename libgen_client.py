@@ -1,31 +1,8 @@
-DEFAULT_FIELDS = "Title,Author,ID,MD5"
-
-BASE_URL = "http://libgen.io/"
-LIBGEN_URL = "http://libgen.io/foreignfiction/"
-
-BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
-DOWNLOAD_URL = "get.php?md5={0}"
-SEARCH_URL = "index.php"
-
-ID_REGEX = "\?id=[0-9]+"
-
 from lxml import etree
-import re
+import random
 import urllib
 
-DEFAULT_FIELDS = "Title,Author,ID,MD5"
 
-LIBGEN_URL = "http://libgen.io/foreignfiction/"
-
-BOOK_ENDPOINT =  "json.php?ids={0}&fields={1}"
-DOWNLOAD_URL = "get.php?md5={0}"
-SEARCH_URL = "index.php"
-
-ID_REGEX = "\?id=[0-9]+"
-
-
-def _json_object_hook(d): return namedtuple('X', d.keys())(*d.values())
-def json2obj(data): return json.loads(data, object_hook=_json_object_hook)
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -33,7 +10,7 @@ def xpath(node, path):
 
     return tree.xpath(base_xpath + path)
 
-class LibgenDownload:
+class LibgenMirror:
     def __init__(self, url, format, size, unit):
         self.url = url
         self.format = format
@@ -41,58 +18,60 @@ class LibgenDownload:
         self.unit = unit
 
     @staticmethod
-    def parse(node):
-        DOWNLOAD_REGEX = "([A-z0-9]+)\(([0-9]+)([A-z]+)\)"
+    def parse(node, file_type, file_size, file_size_unit):
+        url = node.get('href')
 
-        text = node.text
-        match = re.match(DOWNLOAD_REGEX, text)
-
-        if not match:
-            return None
-
-        url = BASE_URL + node.get('href').replace('ads.php', 'get.php')
-
-        format = match.group(1)
-        size = match.group(2)
-        unit = match.group(3)
-
-        return LibgenDownload(url, format, size, unit)
+        return LibgenMirror(url, file_type, file_size, file_size_unit)
 
 class LibgenBook:
-    def __init__(self, title, author, series, downloads, language, image_url):
+    def __init__(self, title, authors, series, md5, mirrors, language,
+                 image_url):
         self.title = title
-        self.author = author
+        self.authors = authors
         self.series = series
-        self.downloads = downloads
+        self.md5 = md5
+        self.mirrors = mirrors
         self.language = language
         self.image_url = image_url
 
     @staticmethod
     def parse(node):
-        AUTHOR_XPATH = '/td[1]/a'
+        AUTHOR_XPATH = '/td[1]//a'
         SERIES_XPATH = '/td[2]'
-        TITLE_XPATH = '/td[3]'
+        TITLE_XPATH = '/td[3]/a'
         LANGUAGE_XPATH = '/td[4]'
-        DOWNLOADS_XPATH = '/td[5]/div/a[1]'
-        IMAGE_REGEX = re.compile("\&lt\;img src=\"?/(fictioncovers/.*?)\"? .*?\&gt\;")
+        FILE_XPATH = '/td[5]'
+        MIRRORS_XPATH = '/td[6]//a'
 
-        author_result = xpath(node, AUTHOR_XPATH)
-        author = author_result[0].text if len(author_result) > 0 else 'Unknown'
+        # Parse the Author(s) column into `authors`
+        authors = ' & '.join([
+            author.text for author in xpath(node, AUTHOR_XPATH)
+        ])
+
+        if len(authors) == 0:
+            authors = 'Unknown'
+
+        # Parse File and Mirrors columns into a list of mirrors
+        file_info = xpath(node, FILE_XPATH)[0].text.encode('utf-8')
+        file_type, file_size = file_info.split(' / ')
+        file_size, file_size_unit = file_size.split('\xc2\xa0')
+
+        mirrors = [
+            LibgenMirror.parse(n, file_type, file_size, file_size_unit)
+            for n in xpath(node, MIRRORS_XPATH)
+        ]
+
+        # Parse other columns
         series = xpath(node, SERIES_XPATH)[0].text
         title = xpath(node, TITLE_XPATH)[0].text
+        md5 = xpath(node, TITLE_XPATH)[0].get('href').split('/')[-1]
         language = xpath(node, LANGUAGE_XPATH)[0].text
 
-        downloads_nodes = xpath(node, DOWNLOADS_XPATH)
-        downloads = [LibgenDownload.parse(n) for n in downloads_nodes]
-
-        if not author or not title:
+        if not authors or not title:
             return None
 
-        raw_html = etree.tostring(node)
-        image_match = IMAGE_REGEX.search(raw_html)
-        image_url = BASE_URL + image_match.groups(1)[0] if image_match is not None else None          
+        return LibgenBook(title, authors, series, md5, mirrors, language, None)
 
-        return LibgenBook(title, author, series, downloads, language, image_url)
 
 class LibgenSearchResults:
     def __init__(self, results, total):
@@ -101,31 +80,47 @@ class LibgenSearchResults:
 
     @staticmethod
     def parse(node):
-        SEARCH_ROW_SELECTOR = "//body/table[last()]//tr"
+        SEARCH_ROW_SELECTOR = "/body/table/tbody/tr"
 
         result_rows = xpath(node, SEARCH_ROW_SELECTOR)
 
         results = []
+
         for row in result_rows:
             book = LibgenBook.parse(row)
-            if book is None: continue
+            if book is None:
+                continue
 
             results.append(book)
 
-        total = 0
+        total = len(results)
 
         return LibgenSearchResults(results, total)
 
+
 class LibgenFictionClient:
-    def __init__(self, base_url=LIBGEN_URL):
-        self.base_url = base_url
+    def __init__(self, mirror=None):
+
+        MIRRORS = [
+            "libgen.is",
+            # "libgen.lc",  # Still has the old-style search
+            "gen.lib.rus.ec",
+            "93.174.95.27",
+        ]
+
+        if mirror is None:
+            self.base_url = "http://{}/fiction/".format(random.choice(MIRRORS))
+        else:
+            self.base_url = "http://{}/fiction/".format(mirror)
 
     def search(self, query):
-        url = self.base_url + SEARCH_URL
+        url = self.base_url
         query_params = {
-            's': query,
-            'f_group': 1
-        } 
+            'q': query,
+            'criteria': '',
+            'language': '',
+            'format': '',
+        }
 
         query_string = urllib.urlencode(query_params)
         request = urllib.urlopen(url + '?' + query_string)
@@ -136,10 +131,15 @@ class LibgenFictionClient:
 
         return LibgenSearchResults.parse(tree)
 
+    def get_detail_url(self, md5):
+        detail_url = '{}{}'.format(self.base_url, md5)
+
+        return detail_url
+
 
 if __name__ == "__main__":
     client = LibgenFictionClient()
-    result = client.search("way kings")
+    search_results = client.search("shadows on the grass")
 
-    for result in result.results:
+    for result in search_results.results:
         print(result.title)

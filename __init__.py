@@ -1,102 +1,112 @@
-# -*- coding: utf-8 -*-
-
 from __future__ import (unicode_literals, division, absolute_import, print_function)
+
+from calibre.customize import StoreBase
+from calibre.devices.usbms.driver import debug_print
+from calibre.gui2 import open_url
+from calibre.gui2.store import StorePlugin
+from calibre.gui2.store.search_result import SearchResult
+from calibre.gui2.store.web_store_dialog import WebStoreDialog
+from PyQt5.Qt import QUrl
+
+from .libgen_client import LibgenFictionClient
+
 store_version = 5  # Needed for dynamic plugin loading
 
 __license__ = 'MIT'
 __copyright__ = 'Fallacious Reasoning'
 __docformat__ = 'restructuredtext en'
 
-#####################################################################
-# Plug-in base class
-#####################################################################
-
-from calibre.customize import InterfaceActionBase
-
 PLUGIN_NAME = 'Libgen Fiction'
-PLUGIN_DESCRIPTION = 'Adds a Libfen Fiction search provider to Calibre'
-PLUGIN_VERSION_TUPLE = (0, 1, 0)
-PLUGIN_VERSION = '.'.join([str(x) for x in PLUGIN_VERSION_TUPLE])
+PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to Calibre'
 PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
+PLUGIN_VERSION = (0, 2, 0)
 
-#####################################################################
-
-import base64
-import mimetypes
-import re
-import urllib
-import urllib2
-from contextlib import closing
-
-from lxml import etree
-
-from .libgen_client import LibgenFictionClient
-
-from calibre import browser, url_slash_cleaner
-from calibre.constants import __appname__, __version__
-from calibre.gui2.store.basic_config import BasicStoreConfig
-from calibre.gui2.store.search_result import SearchResult
-from calibre.gui2.store import StorePlugin
-
-from calibre.customize import StoreBase
-
-
-web_url = 'http://libgen.io/'
-libgen = LibgenFictionClient()
-
-def search(query, max_results=10, timeout=60):
-    libgen_results = libgen.search(query)
-    for result in libgen_results.results[:min(max_results, len(libgen_results.results))]:
-        s = SearchResult()
-
-        s.title = result.title
-        s.author = result.author
-        s.series = result.series
-        s.language = result.language
-
-        for download in result.downloads:
-            s.downloads[download.format] = download.url
-
-        s.formats = ', '.join(s.downloads.keys())
-        s.drm = SearchResult.DRM_UNLOCKED
-        s.cover_url = result.image_url
-
-        # don't show results with no downloads
-        if not s.formats:
-            continue
-
-        yield s
-
-        
 class LibgenStore(StorePlugin):
+    def genesis(self):
+        '''
+        Initialize the Libgen Client
+        '''
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:genesis')
+
+        self.libgen = LibgenFictionClient()
+
     def search(self, query, max_results=10, timeout=60):
         '''
-            Searches LibGen for Books
+        Searches LibGen for Books. Since the mirror links are not direct
+        downloads, it should not provide these as `s.downloads`.
         '''
-        for result in search(query, max_results, timeout):
-            yield result
 
-if __name__ == '__main__':
-    import sys
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:search:query =',
+                    query)
 
-    query = ' '.join(sys.argv[1:]) if len(sys.argv) > 1 else "Stormlight Archive"
-    for result in search(' '.join(sys.argv[1:])):
-        print('=========================================================================================================\nTitle: {0}\nAuthor: {1}\nSeries: {2}\nLanguage: {3}\nDownloads: {4}'.format(result.title, result.author, result.series, result.language, len(result.downloads)))
+        libgen_results = self.libgen.search(query)
+
+        for result in libgen_results.results[:min(max_results, len(libgen_results.results))]:
+            debug_print('Libgen Fiction::__init__.py:LibgenStore:search:'
+                        'result.title =',
+                        result.title)
+
+            for mirror in result.mirrors[0:1]:  # Calibre only shows 1 anyway
+                debug_print('Libgen Fiction::__init__.py:LibgenStore:search:'
+                            'result.mirror.url =', mirror.url)
+
+                s = SearchResult()
+
+                s.store_name = PLUGIN_NAME
+                s.cover_url = result.image_url
+                s.title = '{} ({}, {}{})'.format(
+                    result.title, result.language, mirror.size, mirror.unit)
+                s.author = result.authors
+                s.price = '0.00'
+                s.detail_item = result.md5
+                s.drm = SearchResult.DRM_UNLOCKED
+                s.formats = mirror.format
+                s.plugin_author = PLUGIN_AUTHORS
+
+                debug_print('Libgen Fiction::__init__.py:LibgenStore:search:s =',
+                            s)
+
+                yield s
+
+    def open(self, parent=None, detail_item=None, external=False):
+        '''
+        Open the specified item in the external, or Calibre's browser
+        '''
+
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:open:locals() =',
+                    locals())
+
+        detail_url = (
+            self.libgen.get_detail_url(detail_item)
+            if detail_item
+            else self.libgen.base_url
+        )
+
+        debug_print('Libgen Fiction::__init__.py:LibgenStore:open:detail_url =',
+                    detail_url)
+
+        if external or self.config.get('open_external', False):
+            open_url(QUrl(detail_url))
+        else:
+            d = WebStoreDialog(
+                self.gui, self.libgen.base_url, parent, detail_url)
+            d.setWindowTitle(self.name)
+            d.set_tags(self.config.get('tags', ''))
+            d.exec_()
 
 class LibgenStoreWrapper(StoreBase):
     name                    = PLUGIN_NAME
     description             = PLUGIN_DESCRIPTION
     supported_platforms     = ['windows', 'osx', 'linux']
     author                  = PLUGIN_AUTHORS
-    version                 = PLUGIN_VERSION_TUPLE
+    version                 = PLUGIN_VERSION
     minimum_calibre_version = (1, 0, 0)
     affiliate               = False
+    drm_free_only           = True
 
     def load_actual_plugin(self, gui):
         '''
         This method must return the actual interface action plugin object.
         '''
-        #mod, cls = self.actual_plugin.split(':')
-        store = LibgenStore(gui, self.name)
-        self.actual_plugin_object  = store#getattr(importlib.import_module(mod), cls)(gui, self.name)
+        self.actual_plugin_object  = LibgenStore(gui, self.name)
         return self.actual_plugin_object
