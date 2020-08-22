@@ -13,12 +13,12 @@ from .libgen_client import LibgenFictionClient
 store_version = 5  # Needed for dynamic plugin loading
 
 __license__ = 'MIT'
-__copyright__ = 'Fallacious Reasoning'
+__copyright__ = 'fallaciousreasoning'
 __docformat__ = 'restructuredtext en'
 
 PLUGIN_NAME = 'Libgen Fiction'
 PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to Calibre'
-PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
+PLUGIN_AUTHORS = "fallaciousreasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
 PLUGIN_VERSION = (0, 2, 0)
 
 class LibgenStore(StorePlugin):
