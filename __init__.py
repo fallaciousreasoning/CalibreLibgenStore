@@ -1,5 +1,6 @@
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 
+from calibre import browser
 from calibre.customize import StoreBase
 from calibre.devices.usbms.driver import debug_print
 from calibre.gui2 import open_url
@@ -94,6 +95,12 @@ class LibgenStore(StorePlugin):
             d.set_tags(self.config.get('tags', ''))
             d.exec_()
 
+    def get_details(self, search_result, details):
+        url = self.libgen.get_detail_url(search_result.detail_item)
+
+        download = self.libgen.get_download_url(search_result.detail_item)
+        search_result.downloads[search_result.formats] = download
+        
 class LibgenStoreWrapper(StoreBase):
     name                    = PLUGIN_NAME
     description             = PLUGIN_DESCRIPTION

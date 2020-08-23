@@ -136,6 +136,25 @@ class LibgenFictionClient:
 
         return detail_url
 
+    def get_download_url(self, md5):
+        download_urls = [
+            'http://93.174.95.29/fiction/{}'.format(md5),
+            'https://libgen.lc/foreignfiction/ads.php?md5={}'.format(md5)
+        ]
+
+        for url in download_urls:
+            try:
+                request = urllib.urlopen(url)
+                html = request.read()
+
+                parser = etree.HTMLParser()
+                tree = etree.fromstring(html, parser)
+
+                SELECTOR = "//h2/a[contains(., 'GET')]"
+                link = tree.xpath(SELECTOR)
+                return link[0].get('href')
+            except:
+                continue
 
 if __name__ == "__main__":
     client = LibgenFictionClient()
