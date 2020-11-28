@@ -1,14 +1,7 @@
-# “Compiled”
-*.zip
-
-# Calibre
-calibre
-
-# PyCharm
+# PyCharm, VSCode, Conda
 .idea
-
-# VSCode
-.vscode/
+.vscode
+environment.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
