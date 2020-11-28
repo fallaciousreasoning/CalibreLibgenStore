@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
+
 from lxml import etree
 import random
 import urllib
-
 
 
 def xpath(node, path):
