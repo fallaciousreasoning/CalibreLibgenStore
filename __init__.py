@@ -1,5 +1,6 @@
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 
+from calibre import browser
 from calibre.customize import StoreBase
 from calibre.devices.usbms.driver import debug_print
 from calibre.gui2 import open_url
@@ -13,12 +14,12 @@ from .libgen_client import LibgenFictionClient
 store_version = 5  # Needed for dynamic plugin loading
 
 __license__ = 'MIT'
-__copyright__ = 'Fallacious Reasoning'
+__copyright__ = 'fallaciousreasoning'
 __docformat__ = 'restructuredtext en'
 
 PLUGIN_NAME = 'Libgen Fiction'
 PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to Calibre'
-PLUGIN_AUTHORS = "Fallacious Reasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
+PLUGIN_AUTHORS = "fallaciousreasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)"
 PLUGIN_VERSION = (0, 2, 0)
 
 class LibgenStore(StorePlugin):
@@ -94,6 +95,12 @@ class LibgenStore(StorePlugin):
             d.set_tags(self.config.get('tags', ''))
             d.exec_()
 
+    def get_details(self, search_result, details):
+        url = self.libgen.get_detail_url(search_result.detail_item)
+
+        download = self.libgen.get_download_url(search_result.detail_item)
+        search_result.downloads[search_result.formats] = download
+        
 class LibgenStoreWrapper(StoreBase):
     name                    = PLUGIN_NAME
     description             = PLUGIN_DESCRIPTION
