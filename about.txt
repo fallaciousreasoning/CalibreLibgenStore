@@ -1,0 +1,5 @@
+<p>Libgen Fiction</p>
+<ul>
+  <li>A Libgen Fiction store plugin for Calibre.</li>
+  <li>Please report any errors or requests on <a href="https://github.com/fallaciousreasoning/CalibreLibgenStore/issues">this plugin’s GitHub repository page</a>.</li>
+</ul>
