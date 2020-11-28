@@ -2,7 +2,8 @@
 
 from lxml import etree
 import random
-import urllib
+from urllib.request import urlopen
+from urllib.parse import urlencode
 
 
 def xpath(node, path):
@@ -53,9 +54,9 @@ class LibgenBook:
             authors = 'Unknown'
 
         # Parse File and Mirrors columns into a list of mirrors
-        file_info = xpath(node, FILE_XPATH)[0].text.encode('utf-8')
+        file_info = xpath(node, FILE_XPATH)[0].text
         file_type, file_size = file_info.split(' / ')
-        file_size, file_size_unit = file_size.split('\xc2\xa0')
+        file_size, file_size_unit = file_size.split('\xa0')
 
         mirrors = [
             LibgenMirror.parse(n, file_type, file_size, file_size_unit)
@@ -123,8 +124,8 @@ class LibgenFictionClient:
             'format': '',
         }
 
-        query_string = urllib.urlencode(query_params)
-        request = urllib.urlopen(url + '?' + query_string)
+        query_string = urlencode(query_params)
+        request = urlopen(url + '?' + query_string)
         html = request.read()
 
         parser = etree.HTMLParser()
@@ -145,7 +146,7 @@ class LibgenFictionClient:
 
         for url in download_urls:
             try:
-                request = urllib.urlopen(url)
+                request = urlopen(url)
                 html = request.read()
 
                 parser = etree.HTMLParser()
