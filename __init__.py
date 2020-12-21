@@ -74,6 +74,9 @@ class LibgenStore(StorePlugin):
         debug_print = partial(module_debug_print, 'LibgenStore:open:')
         debug_print('locals() = ', locals())
 
+        if not hasattr(self, 'libgen'):
+            self.genesis() 
+
         detail_url = (
             self.libgen.get_detail_url(detail_item)
             if detail_item
