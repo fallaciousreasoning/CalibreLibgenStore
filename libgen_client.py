@@ -104,6 +104,7 @@ class LibgenFictionClient:
     def __init__(self, mirror=None):
 
         MIRRORS = [
+            "libgen.rs",
             "libgen.is",
             # "libgen.lc",  # Still has the old-style search
             "gen.lib.rus.ec",
@@ -111,7 +112,7 @@ class LibgenFictionClient:
         ]
 
         if mirror is None:
-            self.base_url = "http://{}/fiction/".format(random.choice(MIRRORS))
+            self.base_url = "http://{}/fiction/".format(MIRRORS[0])
         else:
             self.base_url = "http://{}/fiction/".format(mirror)
 
@@ -140,8 +141,7 @@ class LibgenFictionClient:
 
     def get_download_url(self, md5):
         download_urls = [
-            'http://93.174.95.29/fiction/{}'.format(md5),
-            'https://libgen.lc/foreignfiction/ads.php?md5={}'.format(md5)
+            'http://library.lol/fiction/{}'.format(md5),
         ]
 
         for url in download_urls:
@@ -153,6 +153,7 @@ class LibgenFictionClient:
                 tree = etree.fromstring(html, parser)
 
                 SELECTOR = "//h2/a[contains(., 'GET')]"
+                SELECTOR = "//a[contains(., 'GET')]"
                 link = tree.xpath(SELECTOR)
                 return link[0].get('href')
             except:
@@ -160,7 +161,9 @@ class LibgenFictionClient:
 
 if __name__ == "__main__":
     client = LibgenFictionClient()
-    search_results = client.search("shadows on the grass")
+    search_results = client.search("the count of monte cristo")
 
-    for result in search_results.results:
+    for result in search_results.results[:5]:
         print(result.title)
+        print("Detail", client.get_detail_url(result.md5))
+        print("Download", client.get_download_url(result.md5))
