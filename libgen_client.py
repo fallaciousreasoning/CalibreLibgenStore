@@ -40,7 +40,7 @@ class LibgenBook:
     def parse(node):
         AUTHOR_XPATH = '/td[1]//a'
         SERIES_XPATH = '/td[2]'
-        TITLE_XPATH = '/td[3]/a'
+        TITLE_XPATH = '/td[3]//a'
         LANGUAGE_XPATH = '/td[4]'
         FILE_XPATH = '/td[5]'
         MIRRORS_XPATH = '/td[6]//a'
