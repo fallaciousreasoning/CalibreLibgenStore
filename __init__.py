@@ -40,6 +40,9 @@ class LibgenStore(StorePlugin):
         """Searches LibGen for Books. Since the mirror links are not direct
         downloads, it should not provide these as `s.downloads`.
         """
+        if not hasattr(self, 'libgen'):
+            self.genesis() 
+
         debug_print = partial(module_debug_print, 'LibgenStore:search:')
         debug_print('search:query = ', query)
 
