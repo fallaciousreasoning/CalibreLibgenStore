@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import getopt
+import sys
 
 from lxml import etree
 import random
@@ -38,17 +40,17 @@ class LibgenBook:
 
     @staticmethod
     def parse(node):
-        AUTHOR_XPATH = '/td[1]//a'
+        AUTHOR_XPATH = '/td[1]/ul/li/a'
         SERIES_XPATH = '/td[2]'
-        TITLE_XPATH = '/td[3]//a'
+        TITLE_XPATH = '/td[3]/p/a'
         LANGUAGE_XPATH = '/td[4]'
         FILE_XPATH = '/td[5]'
         MIRRORS_XPATH = '/td[6]//a'
 
         # Parse the Author(s) column into `authors`
-        authors = ' & '.join([
+        authors = ' & '.join(filter(None, [
             author.text for author in xpath(node, AUTHOR_XPATH)
-        ])
+        ]))
 
         if len(authors) == 0:
             authors = 'Unknown'
@@ -116,13 +118,13 @@ class LibgenFictionClient:
         else:
             self.base_url = "http://{}/fiction/".format(mirror)
 
-    def search(self, query):
+    def search(self, query, criteria='', language='English', file_format=''):
         url = self.base_url
         query_params = {
             'q': query,
-            'criteria': '',
-            'language': '',
-            'format': '',
+            'criteria': criteria,
+            'language': language,
+            'format': file_format,
         }
 
         query_string = urlencode(query_params)
@@ -159,11 +161,43 @@ class LibgenFictionClient:
             except:
                 continue
 
-if __name__ == "__main__":
+def main(argv):
     client = LibgenFictionClient()
-    search_results = client.search("the count of monte cristo")
+
+    opts, args = getopt.getopt(argv, "hq:t:a:s:l:f:", ["query=", "title=", "author=", "series=", "language=", "format="])
+    query = ""
+    criteria = ""
+    file_format = "epub"
+    language = "English"
+
+    for opt, arg in opts:
+        if opt == '-h':
+            print('USAGE: libgen_client.py -q <query> -t <title> -a <author> -s <series> -l <language> -f <format>')
+            print('Only one of query, title, author, or series may be used at a time')
+            sys.exit()
+        elif opt in ("-q", "--query"):
+            query = arg
+        elif opt in ("-t", "--title"):
+            criteria = "title"
+            query = arg
+        elif opt in ("-a", "--author"):
+            query = arg
+            criteria = "authors"
+        elif opt in ("-s", "--series"):
+            criteria = "series"
+        elif opt in ("-l", "--language"):
+            language = arg
+        elif opt in ("-f", "--format"):
+            file_format = arg
+
+    search_results = client.search(query, criteria, language, file_format)
+
 
     for result in search_results.results[:5]:
-        print(result.title)
+        print(result.title+" by "+result.authors)
         print("Detail", client.get_detail_url(result.md5))
         print("Download", client.get_download_url(result.md5))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
