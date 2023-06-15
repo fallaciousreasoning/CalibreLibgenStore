@@ -25,7 +25,7 @@ __docformat__      = 'restructuredtext en'
 PLUGIN_NAME        = 'Libgen Fiction'
 PLUGIN_DESCRIPTION = 'Adds a Libgen Fiction search provider to calibre'
 PLUGIN_AUTHORS     = 'fallaciousreasoning (https://github.com/fallaciousreasoning/CalibreLibgenStore)'
-PLUGIN_VERSION     = (0, 4, 0)
+PLUGIN_VERSION     = (0, 4, 3)
 
 class LibgenStore(StorePlugin):
     def genesis(self):
@@ -41,7 +41,7 @@ class LibgenStore(StorePlugin):
         downloads, it should not provide these as `s.downloads`.
         """
         if not hasattr(self, 'libgen'):
-            self.genesis() 
+            self.genesis()
 
         debug_print = partial(module_debug_print, 'LibgenStore:search:')
         debug_print('search:query = ', query)
@@ -61,7 +61,7 @@ class LibgenStore(StorePlugin):
                 s.title = '{} ({}, {}{})'.format(
                     result.title, result.language, mirror.size, mirror.unit)
                 s.author = result.authors
-                s.price = '0.00'
+                s.price = 'FREE'
                 s.detail_item = result.md5
                 s.drm = SearchResult.DRM_UNLOCKED
                 s.formats = mirror.format

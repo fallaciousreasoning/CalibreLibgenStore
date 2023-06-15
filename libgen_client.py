@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-
+import sys
 from lxml import etree
-import random
 from urllib.request import urlopen
 from urllib.parse import urlencode
-
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -38,17 +36,17 @@ class LibgenBook:
 
     @staticmethod
     def parse(node):
-        AUTHOR_XPATH = '/td[1]//a'
+        AUTHOR_XPATH = '/td[1]/ul/li/a'
         SERIES_XPATH = '/td[2]'
-        TITLE_XPATH = '/td[3]//a'
+        TITLE_XPATH = '/td[3]/p/a'
         LANGUAGE_XPATH = '/td[4]'
         FILE_XPATH = '/td[5]'
         MIRRORS_XPATH = '/td[6]//a'
 
         # Parse the Author(s) column into `authors`
-        authors = ' & '.join([
+        authors = ' & '.join(filter(None, [
             author.text for author in xpath(node, AUTHOR_XPATH)
-        ])
+        ]))
 
         if len(authors) == 0:
             authors = 'Unknown'
@@ -116,14 +114,15 @@ class LibgenFictionClient:
         else:
             self.base_url = "http://{}/fiction/".format(mirror)
 
-    def search(self, query):
+    def search(self, query, criteria='', language='English', file_format=''):
         url = self.base_url
         query_params = {
             'q': query,
-            'criteria': '',
-            'language': '',
-            'format': '',
+            'criteria': criteria,
+            'language': language,
+            'format': file_format,
         }
+        query_params = {k: v for k, v in query_params.items() if v is not None}
 
         query_string = urlencode(query_params)
         request = urlopen(url + '?' + query_string)
@@ -159,11 +158,46 @@ class LibgenFictionClient:
             except:
                 continue
 
-if __name__ == "__main__":
+def main(argv):
+    import argparse
+
     client = LibgenFictionClient()
-    search_results = client.search("the count of monte cristo")
+
+    parser = argparse.ArgumentParser(description="Use Libgen.Fiction from the command line")
+    parser.add_argument('--query', '-q', help="Search query")
+    parser.add_argument('--title', '-t', help="Title to search for")
+    parser.add_argument('--author', '-a', help="Author to search for")
+    parser.add_argument('--series', '-s', help="Series")
+    parser.add_argument('--language', '-l', help="Language")
+    parser.add_argument('--format', '-f', help="Ebook format (epub, mobi, azw, azw3, fb2, pdf, rtf, txt)")
+
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+    query = ""
+    criteria = ""
+
+    if args.query:
+        query = args.query
+    elif args.title:
+        criteria = "title"
+        query = args.title
+    elif args.author:
+        query = args.author
+        criteria = "authors"
+    elif args.series:
+        query = args.series
+        criteria = "series"
+
+    print(query+" "+criteria)
+    if query:
+        search_results = client.search(query, criteria, args.language, args.format)
+    else:
+        sys.exit()
 
     for result in search_results.results[:5]:
-        print(result.title)
+        print(result.title + " by " + result.authors)
         print("Detail", client.get_detail_url(result.md5))
         print("Download", client.get_download_url(result.md5))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
