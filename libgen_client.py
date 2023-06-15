@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import getopt
+import argparse
 import sys
-
 from lxml import etree
 import random
 from urllib.request import urlopen
@@ -126,6 +125,7 @@ class LibgenFictionClient:
             'language': language,
             'format': file_format,
         }
+        query_params = {k: v for k, v in query_params.items() if v is not None}
 
         query_string = urlencode(query_params)
         request = urlopen(url + '?' + query_string)
@@ -162,39 +162,42 @@ class LibgenFictionClient:
                 continue
 
 def main(argv):
+    import getopt
+
     client = LibgenFictionClient()
 
-    opts, args = getopt.getopt(argv, "hq:t:a:s:l:f:", ["query=", "title=", "author=", "series=", "language=", "format="])
+    parser = argparse.ArgumentParser(description="Use Libgen.Fiction from the command line")
+    parser.add_argument('--query', '-q', help="Search query")
+    parser.add_argument('--title', '-t', help="Title to search for")
+    parser.add_argument('--author', '-a', help="Author to search for")
+    parser.add_argument('--series', '-s', help="Series")
+    parser.add_argument('--language', '-l', help="Language")
+    parser.add_argument('--format', '-f', help="Ebook format (epub, mobi, azw, azw3, fb2, pdf, rtf, txt)")
+
+    args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     query = ""
     criteria = ""
-    file_format = "epub"
-    language = "English"
 
-    for opt, arg in opts:
-        if opt == '-h':
-            print('USAGE: libgen_client.py -q <query> -t <title> -a <author> -s <series> -l <language> -f <format>')
-            print('Only one of query, title, author, or series may be used at a time')
-            sys.exit()
-        elif opt in ("-q", "--query"):
-            query = arg
-        elif opt in ("-t", "--title"):
-            criteria = "title"
-            query = arg
-        elif opt in ("-a", "--author"):
-            query = arg
-            criteria = "authors"
-        elif opt in ("-s", "--series"):
-            criteria = "series"
-        elif opt in ("-l", "--language"):
-            language = arg
-        elif opt in ("-f", "--format"):
-            file_format = arg
+    if args.query:
+        query = args.query
+    elif args.title:
+        criteria = "title"
+        query = args.title
+    elif args.author:
+        query = args.author
+        criteria = "authors"
+    elif args.series:
+        query = args.series
+        criteria = "series"
 
-    search_results = client.search(query, criteria, language, file_format)
-
+    print(query+" "+criteria)
+    if query:
+        search_results = client.search(query, criteria, args.language, args.format)
+    else:
+        sys.exit()
 
     for result in search_results.results[:5]:
-        print(result.title+" by "+result.authors)
+        print(result.title + " by " + result.authors)
         print("Detail", client.get_detail_url(result.md5))
         print("Download", client.get_download_url(result.md5))
 
