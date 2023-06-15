@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-import argparse
 import sys
 from lxml import etree
-import random
 from urllib.request import urlopen
 from urllib.parse import urlencode
-
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -162,7 +159,7 @@ class LibgenFictionClient:
                 continue
 
 def main(argv):
-    import getopt
+    import argparse
 
     client = LibgenFictionClient()
 
